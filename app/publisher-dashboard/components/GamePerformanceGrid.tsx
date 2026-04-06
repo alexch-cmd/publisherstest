@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 import {
   TrendingUp, TrendingDown, Zap, AlertTriangle, Lightbulb,
   ShoppingCart, Users, RotateCcw, Star, ExternalLink,
+  Zap as ZapIcon, Flame, AlertCircle, Rocket, ArrowUpDown,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { GAMES, type Game } from "@/lib/mockPublisherData";
+import { motion } from "framer-motion";
+import { GAMES, BENCHMARKS, type Game } from "@/lib/mockPublisherData";
 import { clsx } from "clsx";
 import BentoCard from "./BentoCard";
 
@@ -28,6 +30,50 @@ const AI_CFG = {
   },
 };
 
+const MARKER_ICONS: Record<string, React.ReactNode> = {
+  viral: <Flame className="w-2.5 h-2.5" />,
+  launch: <Rocket className="w-2.5 h-2.5" />,
+  patch: <ZapIcon className="w-2.5 h-2.5" />,
+  alert: <AlertCircle className="w-2.5 h-2.5" />,
+};
+
+const MARKER_COLORS: Record<string, string> = {
+  viral: "#F191FA",
+  launch: "#ABF790",
+  patch: "#36E0F8",
+  alert: "#FF637F",
+};
+
+// Benchmark helper
+function getGenreBenchmarks(game: Game) {
+  const d1B = BENCHMARKS.find((b) => b.label === "D1 Retention");
+  const refundB = BENCHMARKS.find((b) => b.label === "Refund Rate");
+  const wishB = BENCHMARKS.find((b) => b.label === "Wishlist→Purchase");
+  return [
+    {
+      label: "D1 Ret.",
+      value: game.retentionD1,
+      median: d1B?.industryMedian ?? 42,
+      unit: "%",
+      lowerIsBetter: false,
+    },
+    {
+      label: "Refund",
+      value: game.refundRate,
+      median: refundB?.industryMedian ?? 3.2,
+      unit: "%",
+      lowerIsBetter: true,
+    },
+    {
+      label: "WL Conv.",
+      value: game.wishlistConversionRate,
+      median: wishB?.industryMedian ?? 10,
+      unit: "%",
+      lowerIsBetter: false,
+    },
+  ];
+}
+
 // Crosshair tooltip with % change + quick action
 function ChartTooltip({ active, payload, label, game }: {
   active?: boolean; payload?: Array<{ value: number }>; label?: string; game: Game;
@@ -38,10 +84,20 @@ function ChartTooltip({ active, payload, label, game }: {
   const prev = idx > 0 ? game.revenueHistory[idx - 1].value : curr;
   const pct = prev ? ((curr - prev) / prev * 100).toFixed(1) : "0.0";
 
+  // Check if this month has an event marker
+  const marker = game.eventMarkers?.find((m) => m.month === label);
+
   return (
-    <div className="rounded-xl border border-white/12 p-3 min-w-[150px] shadow-elevation-2"
+    <div className="rounded-xl border border-white/12 p-3 min-w-[160px] shadow-elevation-2"
       style={{ background: "rgba(13,13,13,0.98)", backdropFilter: "blur(16px)" }}>
       <p className="text-[9px] text-brand-4 mb-1.5 uppercase tracking-wider">{label}</p>
+      {marker && (
+        <div className="flex items-center gap-1 mb-1.5 px-1.5 py-1 rounded-md"
+          style={{ background: `${MARKER_COLORS[marker.type]}15`, border: `1px solid ${MARKER_COLORS[marker.type]}30` }}>
+          <span style={{ color: MARKER_COLORS[marker.type] }}>{MARKER_ICONS[marker.type]}</span>
+          <span className="text-[9px] font-semibold" style={{ color: MARKER_COLORS[marker.type] }}>{marker.label}</span>
+        </div>
+      )}
       <p className="mono-num text-[15px] font-bold" style={{ color: game.accentColor }}>
         ${(curr / 1000).toFixed(0)}K
       </p>
@@ -58,6 +114,18 @@ function ChartTooltip({ active, payload, label, game }: {
   );
 }
 
+// Custom reference line label (event marker dot)
+function EventDot({ viewBox, color }: { viewBox?: { x: number; y: number; width: number; height: number }; color: string }) {
+  if (!viewBox) return null;
+  const cx = viewBox.x;
+  const cy = (viewBox.y ?? 0) + 4;
+  return (
+    <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
+  );
+}
+
+type SortKey = "revenue" | "dau" | "refund" | "rating";
+
 function GameCard({
   game, presentationMode, highlighted, onSentinelOpen,
 }: {
@@ -66,6 +134,7 @@ function GameCard({
 }) {
   const ai = AI_CFG[game.aiAction.type];
   const gradId = `grv-${game.id}`;
+  const benchmarks = getGenreBenchmarks(game);
 
   return (
     <motion.div
@@ -85,7 +154,6 @@ function GameCard({
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-1 mb-1">
-            {/* Genre badge */}
             <span
               className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border"
               style={{ color: game.accentColor, borderColor: `${game.accentColor}40`, background: `${game.accentColor}12` }}
@@ -106,10 +174,10 @@ function GameCard({
         </div>
       </div>
 
-      {/* 12-month revenue sparkline */}
-      <div className="h-[58px] -mx-1">
+      {/* 12-month revenue sparkline with event markers */}
+      <div className="h-[64px] -mx-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={game.revenueHistory} margin={{ top: 2, right: 2, left: -40, bottom: 0 }}>
+          <AreaChart data={game.revenueHistory} margin={{ top: 8, right: 2, left: -40, bottom: 0 }}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={game.accentColor} stopOpacity={0.4} />
@@ -122,6 +190,18 @@ function GameCard({
               cursor={{ stroke: `${game.accentColor}60`, strokeWidth: 1, strokeDasharray: "3 2" }}
               content={<ChartTooltip game={game} />}
             />
+            {/* Event marker lines */}
+            {game.eventMarkers?.map((marker) => (
+              <ReferenceLine
+                key={marker.month}
+                x={marker.month}
+                stroke={MARKER_COLORS[marker.type]}
+                strokeWidth={1}
+                strokeOpacity={0.5}
+                strokeDasharray="2 2"
+                label={(props) => <EventDot {...props} color={MARKER_COLORS[marker.type]} />}
+              />
+            ))}
             <Area type="monotone" dataKey="value" stroke={game.accentColor} strokeWidth={1.5}
               fill={`url(#${gradId})`} dot={false} activeDot={{ r: 3, fill: game.accentColor }} />
           </AreaChart>
@@ -159,6 +239,29 @@ function GameCard({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Industry benchmark strip */}
+      <div className="rounded-lg bg-white/01 border border-white/05 px-2.5 py-2 space-y-1">
+        <p className="text-[7px] text-brand-4 uppercase tracking-widest mb-1.5">vs. Industry Avg</p>
+        {benchmarks.map((b) => {
+          const aboveMedian = b.lowerIsBetter ? b.value < b.median : b.value > b.median;
+          const deltaAbs = Math.abs(b.value - b.median).toFixed(1);
+          return (
+            <div key={b.label} className="flex items-center justify-between gap-2">
+              <span className="text-[8px] text-brand-4">{b.label}</span>
+              <div className="flex items-center gap-1">
+                <span className="mono-num text-[9px] font-bold text-brand-3">{b.value}{b.unit}</span>
+                <span
+                  className="mono-num text-[8px] font-bold"
+                  style={{ color: aboveMedian ? "#ABF790" : "#FF637F" }}
+                >
+                  {aboveMedian ? "▲" : "▼"}{deltaAbs}{b.unit}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Revenue row */}
@@ -202,18 +305,69 @@ interface GamePerformanceGridProps {
   onSentinelOpen: (gameId: string) => void;
 }
 
+const SORT_OPTIONS: { key: SortKey; label: string; icon: React.ReactNode }[] = [
+  { key: "revenue", label: "Revenue", icon: <TrendingUp className="w-3 h-3" /> },
+  { key: "dau", label: "DAU", icon: <Users className="w-3 h-3" /> },
+  { key: "refund", label: "Refund ↑", icon: <RotateCcw className="w-3 h-3" /> },
+  { key: "rating", label: "Rating", icon: <Star className="w-3 h-3" /> },
+];
+
+function sortGames(games: typeof GAMES, key: SortKey) {
+  return [...games].sort((a, b) => {
+    if (key === "revenue") return b.totalRevenueMTD - a.totalRevenueMTD;
+    if (key === "dau") return b.dau - a.dau;
+    if (key === "refund") return b.refundRate - a.refundRate;
+    if (key === "rating") return b.steamRating - a.steamRating;
+    return 0;
+  });
+}
+
 export default function GamePerformanceGrid({ presentationMode, highlightedGameId, onSentinelOpen }: GamePerformanceGridProps) {
+  const [sortKey, setSortKey] = useState<SortKey>("revenue");
+  const sorted = sortGames(GAMES, sortKey);
+
   return (
     <BentoCard
       title="Game Performance & AI Actions"
-      subtitle="12-month revenue trend · Live metrics · AI signals for all titles"
+      subtitle="12-month revenue · live metrics · event markers · vs. industry benchmarks"
       icon={<TrendingUp />}
       accentColor="#F191FA"
       presentationMode={presentationMode}
       id="section-games"
+      headerRight={
+        <div className="flex items-center gap-1.5">
+          <ArrowUpDown className="w-3 h-3 text-brand-4" />
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setSortKey(opt.key)}
+              className={clsx(
+                "flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border",
+                sortKey === opt.key
+                  ? "bg-[#F191FA]/15 border-[#F191FA]/40 text-[#F191FA]"
+                  : "bg-white/03 border-white/08 text-brand-4 hover:border-white/15"
+              )}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      }
     >
+      {/* Event marker legend */}
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <span className="text-[8px] text-brand-4 uppercase tracking-wider">Events:</span>
+        {Object.entries(MARKER_COLORS).map(([type, color]) => (
+          <div key={type} className="flex items-center gap-1">
+            <span style={{ color }}>{MARKER_ICONS[type]}</span>
+            <span className="text-[8px] text-brand-4 capitalize">{type}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="grid grid-cols-5 gap-3">
-        {GAMES.map((game) => (
+        {sorted.map((game) => (
           <GameCard
             key={game.id}
             game={game}

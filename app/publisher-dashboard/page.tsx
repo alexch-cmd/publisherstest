@@ -8,6 +8,7 @@ import { type ActionChip } from "@/lib/mockPublisherData";
 import AIInsightsBar from "./components/AIInsightsBar";
 import DashboardHeader from "./components/DashboardHeader";
 import ExecutiveSummary from "./components/ExecutiveSummary";
+import WeeklyInsightsSection from "./components/WeeklyInsightsSection";
 import PortfolioMap from "./components/PortfolioMap";
 import LiveTicker from "./components/LiveTicker";
 import GamePerformanceGrid from "./components/GamePerformanceGrid";
@@ -143,11 +144,20 @@ export default function PublisherDashboard() {
           <ExecutiveSummary />
         </motion.div>
 
+        {/* ── Weekly Pulse Insights (above fold anchor) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.18 }}
+        >
+          <WeeklyInsightsSection />
+        </motion.div>
+
         {/* ── Live Ticker (above fold) ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.18 }}
+          transition={{ duration: 0.45, delay: 0.24 }}
           className="mb-4"
           id="section-ticker"
         >
@@ -172,16 +182,14 @@ export default function PublisherDashboard() {
           />
         </RevealSection>
 
-        {/* ── Industry Benchmark + Omni-Channel Pipeline ── */}
+        {/* ── Industry Benchmark ── */}
         <RevealSection id="section-benchmarks" className="mb-4" delay={0.04}>
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-7">
-              <IndustryBenchmark presentationMode={presentationMode} />
-            </div>
-            <div className="col-span-5" id="section-automation">
-              <OmniChannelPipeline presentationMode={presentationMode} />
-            </div>
-          </div>
+          <IndustryBenchmark presentationMode={presentationMode} />
+        </RevealSection>
+
+        {/* ── Automation Pipeline (full-width) ── */}
+        <RevealSection className="mb-4" delay={0.04}>
+          <OmniChannelPipeline presentationMode={presentationMode} />
         </RevealSection>
 
         {/* ── Global Revenue Heatmap ── */}

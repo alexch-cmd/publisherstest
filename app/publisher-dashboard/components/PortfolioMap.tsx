@@ -87,8 +87,8 @@ export default function PortfolioMap({ presentationMode }: PortfolioMapProps) {
       {/* Whale Heatmap — 5 cols */}
       <div className="col-span-5 min-h-[440px]">
         <BentoCard
-          title="High-Value Player Distribution"
-          subtitle="Top 5% spenders activity score by cohort"
+          title="Player Spending Distribution"
+          subtitle="Engagement score by spend tier across all titles"
           icon={<Flame />}
           accentColor="#F191FA"
           presentationMode={presentationMode}

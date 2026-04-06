@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { sankey, sankeyLinkHorizontal } from "d3-sankey";
-import type { SankeyNode, SankeyLink, SankeyGraph } from "d3-sankey";
+import type { SankeyNode, SankeyLink } from "d3-sankey";
 
 interface RawNode { name: string; color: string }
 interface RawLink { source: number; target: number; value: number }
@@ -18,7 +18,10 @@ interface SankeyChartProps {
 }
 
 export default function SankeyChart({ nodes: rawNodes, links: rawLinks, width, height }: SankeyChartProps) {
+  const [hoveredLinkIdx, setHoveredLinkIdx] = useState<number | null>(null);
+
   const { nodes, links } = useMemo(() => {
+    if (width <= 50) return { nodes: [] as LayoutNode[], links: [] as LayoutLink[] };
     const layout = sankey<RawNode, RawLink>()
       .nodeWidth(14)
       .nodePadding(18)
@@ -57,15 +60,22 @@ export default function SankeyChart({ nodes: rawNodes, links: rawLinks, width, h
         const path = linkPath(link as Parameters<typeof linkPath>[0]);
         if (!path) return null;
         const w = Math.max(1.5, link.width ?? 1);
+        const isHovered = hoveredLinkIdx === i;
+        const isDimmed = hoveredLinkIdx !== null && !isHovered;
         return (
-          <g key={i}>
+          <g key={i} style={{ cursor: "pointer" }}
+            onMouseEnter={() => setHoveredLinkIdx(i)}
+            onMouseLeave={() => setHoveredLinkIdx(null)}
+          >
+            {/* Hit area (invisible wider path) */}
+            <path d={path} fill="none" stroke="transparent" strokeWidth={Math.max(w + 8, 16)} />
             <path
               d={path}
               fill="none"
               stroke={`url(#sg-${i})`}
-              strokeWidth={w}
-              strokeOpacity={0.6}
-              className="transition-opacity hover:stroke-opacity-90"
+              strokeWidth={isHovered ? w + 2 : w}
+              strokeOpacity={isDimmed ? 0.1 : isHovered ? 0.9 : 0.6}
+              style={{ transition: "stroke-opacity 0.2s, stroke-width 0.2s" }}
             />
           </g>
         );

@@ -151,14 +151,20 @@ export default function ExecutiveSummary() {
         </div>
       </div>
 
-      {/* ── Right: Genre breakdown ── */}
+      {/* ── Right: Genre breakdown (computed from GAMES data) ── */}
       <div className="col-span-3 glass-card rounded-2xl p-4 flex flex-col gap-3">
         <p className="text-[10px] text-brand-4 uppercase tracking-widest">Revenue by Genre</p>
-        {[
-          { genre: "TCG", pct: 38, color: "#F191FA", rev: 2_820_000 },
-          { genre: "RPG", pct: 52, color: "#FAFD7E", rev: 3_800_000 },
-          { genre: "FPS", pct: 10, color: "#61ADEB", rev: 680_000 },
-        ].map((g) => (
+        {(() => {
+          const genreTotals: Record<string, { rev: number; color: string }> = {};
+          GAMES.forEach((g) => {
+            if (!genreTotals[g.genre]) genreTotals[g.genre] = { rev: 0, color: g.accentColor };
+            genreTotals[g.genre].rev += g.totalRevenueMTD;
+          });
+          const total = Object.values(genreTotals).reduce((s, v) => s + v.rev, 0);
+          return Object.entries(genreTotals).map(([genre, { rev, color }]) => ({
+            genre, pct: Math.round((rev / total) * 100), color, rev,
+          }));
+        })().map((g) => (
           <div key={g.genre} className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

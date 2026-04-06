@@ -12,6 +12,7 @@ export interface RegionRevenue {
   region: string; code: string; revenue: number;
   pppAdjusted: number; growth: number; currency: string;
   countryIds: number[]; // ISO 3166-1 numeric
+  dau: number; // daily active users in this region
 }
 
 export interface AiAction {
@@ -34,10 +35,27 @@ export interface Game {
   retentionD1: number; retentionD7: number; retentionD30: number;
   aiAction: AiAction;
   whaleCount: number; whaleRevenuePct: number;
+  eventMarkers: EventMarker[];
+  weeklyInsights: WeeklyInsight;
 }
 
 // ─── 12-month labels ─────────────────────────────────────────────────────────
 const MONTHS = ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
+
+// ─── Event Marker type ────────────────────────────────────────────────────────
+export interface EventMarker {
+  month: string; // must match a MONTHS entry
+  label: string;
+  type: "viral" | "patch" | "launch" | "alert";
+  source?: string;
+}
+
+// ─── Weekly Insights type ─────────────────────────────────────────────────────
+export interface WeeklyInsight {
+  developments: string[];
+  recommendation: string;
+  urgency: "critical" | "warning" | "opportunity";
+}
 
 // ─── 5 Games ─────────────────────────────────────────────────────────────────
 export const GAMES: Game[] = [
@@ -83,6 +101,20 @@ export const GAMES: Game[] = [
       gameId: "nexus-cards",
     },
     whaleCount: 2_840, whaleRevenuePct: 63,
+    eventMarkers: [
+      { month: "Sep", label: "Set 2 Launch", type: "launch", source: "Steam" },
+      { month: "Feb", label: "JP Viral TikTok", type: "viral", source: "TikTok" },
+      { month: "Apr", label: "Set 3 Reveal", type: "viral", source: "Twitter/X" },
+    ],
+    weeklyInsights: {
+      developments: [
+        "Set 3 reveal event drove CCU +58% to all-time peak of 32K",
+        "Japan wishlists up 31% — JP player base responding to anime art direction",
+        "Whale retention at 94% engagement score — highest in portfolio",
+      ],
+      recommendation: "Launch JP localised 20% sale within 72h to convert wishlist spike",
+      urgency: "opportunity",
+    },
   },
 
   // ── TCG 2 ────────────────────────────────────────────────────────────────
@@ -126,6 +158,19 @@ export const GAMES: Game[] = [
       gameId: "riftbound",
     },
     whaleCount: 1_240, whaleRevenuePct: 57,
+    eventMarkers: [
+      { month: "Jan", label: "Set 2 Pre-order", type: "launch", source: "Steam" },
+      { month: "Mar", label: "Balance Patch 1.4", type: "patch", source: "Steam" },
+    ],
+    weeklyInsights: {
+      developments: [
+        "Set 2 pre-orders tracking 34% below Nexus Cards Set 2 at same milestone",
+        "Balance patch 1.4 improved DAU:MAU ratio from 19% to 22%",
+        "Reddit Set 2 spoiler leak generated organic buzz — 4.2K upvotes",
+      ],
+      recommendation: "Differentiate card mechanic messaging from Nexus — update store page hero",
+      urgency: "warning",
+    },
   },
 
   // ── RPG 1 ────────────────────────────────────────────────────────────────
@@ -169,6 +214,20 @@ export const GAMES: Game[] = [
       gameId: "starfield-drifters",
     },
     whaleCount: 3_210, whaleRevenuePct: 58,
+    eventMarkers: [
+      { month: "Aug", label: "DLC: Void Expanse", type: "launch", source: "Steam" },
+      { month: "Dec", label: "Winter Sale", type: "viral", source: "Steam" },
+      { month: "Apr", label: "Twitch Trending #2", type: "viral", source: "Twitch" },
+    ],
+    weeklyInsights: {
+      developments: [
+        "Twitch trending #2 with 42.8K concurrent viewers — organic community event",
+        "Post-DLC DAU spike +22% is holding 3 weeks after release",
+        "Steam RPG→TCG cross-sell widget converting at 6.4% — above 4% target",
+      ],
+      recommendation: "Activate influencer seeding budget now while Twitch momentum is live",
+      urgency: "opportunity",
+    },
   },
 
   // ── RPG 2 ────────────────────────────────────────────────────────────────
@@ -212,6 +271,20 @@ export const GAMES: Game[] = [
       gameId: "verdant-chronicles",
     },
     whaleCount: 1_980, whaleRevenuePct: 48,
+    eventMarkers: [
+      { month: "Jul", label: "Community 1M milestone", type: "viral", source: "Discord" },
+      { month: "Nov", label: "Expansion: Thornwall", type: "launch", source: "Steam" },
+      { month: "Mar", label: "TikTok speedrun viral", type: "viral", source: "TikTok" },
+    ],
+    weeklyInsights: {
+      developments: [
+        "D30 retention 41% leads entire portfolio — cohort quality is exceptional",
+        "TikTok speedrun clip hit 9.4M views — strongest organic moment this quarter",
+        "RPG→TCG cross-sell funnel firing 8.4K triggers/week from this title",
+      ],
+      recommendation: "Identify top D30 cohort and target them with Nexus Cards cross-sell campaign",
+      urgency: "opportunity",
+    },
   },
 
   // ── FPS ──────────────────────────────────────────────────────────────────
@@ -255,6 +328,20 @@ export const GAMES: Game[] = [
       gameId: "iron-front",
     },
     whaleCount: 840, whaleRevenuePct: 38,
+    eventMarkers: [
+      { month: "Oct", label: "Patch 1.6 Backlash", type: "alert", source: "Steam" },
+      { month: "Feb", label: "DE Review Bomb", type: "alert", source: "Steam" },
+      { month: "Apr", label: "Localization Crisis", type: "alert", source: "Steam" },
+    ],
+    weeklyInsights: {
+      developments: [
+        "Refund rate spiked to 7.4% in DE/FR — voice acting sync errors confirmed",
+        "DAU declining -3.6% WoW as negative reviews suppress organic discovery",
+        "Revenue trajectory -8.4% — at risk of falling below break-even by June",
+      ],
+      recommendation: "Pause DACH/Francophone paid ads immediately and issue community statement",
+      urgency: "critical",
+    },
   },
 ];
 
@@ -322,19 +409,19 @@ export const SANKEY_DATA = {
 // ─── Whale Activity Matrix ────────────────────────────────────────────────────
 export const WHALE_HEATMAP = [
   {
-    cohort: "Ultra Whales ($500+/mo)",
+    cohort: "High Spenders ($500+/mo)",
     games: { "nexus-cards": 94, "riftbound": 62, "starfield-drifters": 78, "verdant-chronicles": 51, "iron-front": 14 },
   },
   {
-    cohort: "Whales ($200–500/mo)",
+    cohort: "Mid Spenders ($200–500/mo)",
     games: { "nexus-cards": 81, "riftbound": 71, "starfield-drifters": 68, "verdant-chronicles": 74, "iron-front": 22 },
   },
   {
-    cohort: "Dolphins ($50–200/mo)",
+    cohort: "Low Spenders ($50–200/mo)",
     games: { "nexus-cards": 64, "riftbound": 58, "starfield-drifters": 72, "verdant-chronicles": 81, "iron-front": 38 },
   },
   {
-    cohort: "Minnows ($10–50/mo)",
+    cohort: "Casual ($10–50/mo)",
     games: { "nexus-cards": 48, "riftbound": 44, "starfield-drifters": 56, "verdant-chronicles": 62, "iron-front": 54 },
   },
 ];
@@ -439,49 +526,54 @@ export const SENTIMENT_DELTA = 5.1;
 export interface TriggerRule {
   id: string; condition: string; action: string;
   status: "active"|"pending"|"paused"; firedCount: number; lastFired: string; targetGame: string;
+  firesLastWeek: number[]; // 7 daily fire counts (Mon–Sun)
 }
 export const TRIGGER_RULES: TriggerRule[] = [
   {
     id: "r1", condition: "RPG hours ≥ 40 AND any TCG owned = false",
     action: "Send 20% discount for Nexus Cards + Riftbound bundle",
     status: "active", firedCount: 8_420, lastFired: "2 min ago", targetGame: "RPG → TCG Funnel",
+    firesLastWeek: [1180, 1240, 980, 1420, 1380, 960, 1260],
   },
   {
     id: "r2", condition: "CCU spike > 1.8x 7-day avg",
     action: "Scale server capacity + notify Community team",
     status: "active", firedCount: 42, lastFired: "just now", targetGame: "Starfield Drifters",
+    firesLastWeek: [4, 6, 3, 8, 7, 5, 9],
   },
   {
     id: "r3", condition: "Refund rate > 6% in region",
     action: "Pause paid ads + flag localization team",
     status: "active", firedCount: 8, lastFired: "4 min ago", targetGame: "Iron Front (DE/FR)",
+    firesLastWeek: [0, 1, 0, 2, 2, 1, 2],
   },
   {
-    id: "r4", condition: "Whale inactivity > 7 days",
-    action: "Send personalised re-engagement offer",
+    id: "r4", condition: "High Spender inactivity > 7 days",
+    action: "Send personalised re-engagement offer with exclusive item",
     status: "active", firedCount: 1_240, lastFired: "38 min ago", targetGame: "All Titles",
+    firesLastWeek: [168, 142, 198, 176, 184, 156, 216],
   },
   {
     id: "r5", condition: "TCG card reveal event live",
     action: "Auto-boost social ads budget by 40% for 48h",
     status: "pending", firedCount: 0, lastFired: "never", targetGame: "Nexus Cards / Riftbound",
+    firesLastWeek: [0, 0, 0, 0, 0, 0, 0],
   },
 ];
 
 // ─── Regional Revenue ─────────────────────────────────────────────────────────
 export const REGIONAL_REVENUE: RegionRevenue[] = [
-  { region: "North America",    code: "NA",   revenue: 2_480_000, pppAdjusted: 2_480_000, growth: 8.4,  currency: "USD",     countryIds: [840, 124] },
-  { region: "Western Europe",   code: "WEU",  revenue: 1_840_000, pppAdjusted: 2_180_000, growth: 12.1, currency: "EUR",     countryIds: [276, 826, 250, 380, 724, 528, 752, 756, 40, 56, 208, 246, 620, 372, 578] },
-  { region: "East Asia",        code: "EA",   revenue: 1_240_000, pppAdjusted: 2_040_000, growth: 28.6, currency: "JPY/KRW", countryIds: [156, 392, 410] },
-  { region: "Southeast Asia",   code: "SEA",  revenue: 480_000,   pppAdjusted: 1_140_000, growth: 42.3, currency: "SGD/THB", countryIds: [702, 764, 360, 458, 608, 704] },
-  { region: "Eastern Europe",   code: "EEU",  revenue: 340_000,   pppAdjusted: 880_000,   growth: 18.9, currency: "PLN/CZK", countryIds: [616, 203, 348, 642, 100, 703, 804] },
-  { region: "Latin America",    code: "LATAM",revenue: 290_000,   pppAdjusted: 780_000,   growth: 34.8, currency: "BRL/MXN", countryIds: [76, 484, 32, 152, 170, 604] },
-  { region: "South Asia",       code: "SA",   revenue: 180_000,   pppAdjusted: 640_000,   growth: 56.2, currency: "INR",     countryIds: [356, 586, 50] },
-  { region: "Middle East/Africa",code: "MEA", revenue: 210_000,   pppAdjusted: 520_000,   growth: 21.4, currency: "AED/ZAR", countryIds: [682, 784, 818, 710, 404] },
-  { region: "Oceania",          code: "OCE",  revenue: 320_000,   pppAdjusted: 360_000,   growth: 6.2,  currency: "AUD",     countryIds: [36, 554] },
-  { region: "Central Asia",     code: "CAS",  revenue: 80_000,    pppAdjusted: 240_000,   growth: 14.7, currency: "KZT",     countryIds: [398, 860] },
-  { region: "Russia",           code: "RU",   revenue: 120_000,   pppAdjusted: 420_000,   growth: 3.2,  currency: "RUB",     countryIds: [643] },
-  { region: "Canada (incl.)",   code: "CA",   revenue: 0,         pppAdjusted: 0,          growth: 0,    currency: "CAD",     countryIds: [124] },
+  { region: "North America",     code: "NA",   revenue: 2_480_000, pppAdjusted: 2_480_000, growth: 8.4,  currency: "USD",     countryIds: [840, 124], dau: 88_400 },
+  { region: "Western Europe",    code: "WEU",  revenue: 1_840_000, pppAdjusted: 2_180_000, growth: 12.1, currency: "EUR",     countryIds: [276, 826, 250, 380, 724, 528, 752, 756, 40, 56, 208, 246, 620, 372, 578], dau: 64_200 },
+  { region: "East Asia",         code: "EA",   revenue: 1_240_000, pppAdjusted: 2_040_000, growth: 28.6, currency: "JPY/KRW", countryIds: [156, 392, 410], dau: 42_800 },
+  { region: "Southeast Asia",    code: "SEA",  revenue: 480_000,   pppAdjusted: 1_140_000, growth: 42.3, currency: "SGD/THB", countryIds: [702, 764, 360, 458, 608, 704], dau: 28_600 },
+  { region: "Eastern Europe",    code: "EEU",  revenue: 340_000,   pppAdjusted: 880_000,   growth: 18.9, currency: "PLN/CZK", countryIds: [616, 203, 348, 642, 100, 703, 804], dau: 18_400 },
+  { region: "Latin America",     code: "LATAM",revenue: 290_000,   pppAdjusted: 780_000,   growth: 34.8, currency: "BRL/MXN", countryIds: [76, 484, 32, 152, 170, 604], dau: 21_200 },
+  { region: "South Asia",        code: "SA",   revenue: 180_000,   pppAdjusted: 640_000,   growth: 56.2, currency: "INR",     countryIds: [356, 586, 50], dau: 32_800 },
+  { region: "Middle East/Africa",code: "MEA",  revenue: 210_000,   pppAdjusted: 520_000,   growth: 21.4, currency: "AED/ZAR", countryIds: [682, 784, 818, 710, 404], dau: 14_600 },
+  { region: "Oceania",           code: "OCE",  revenue: 320_000,   pppAdjusted: 360_000,   growth: 6.2,  currency: "AUD",     countryIds: [36, 554], dau: 11_400 },
+  { region: "Central Asia",      code: "CAS",  revenue: 80_000,    pppAdjusted: 240_000,   growth: 14.7, currency: "KZT",     countryIds: [398, 860], dau: 4_200 },
+  { region: "Russia",            code: "RU",   revenue: 120_000,   pppAdjusted: 420_000,   growth: 3.2,  currency: "RUB",     countryIds: [643], dau: 8_800 },
 ];
 
 // ─── Localization Sentinel ────────────────────────────────────────────────────
