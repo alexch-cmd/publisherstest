@@ -18,16 +18,22 @@
   "license": "ISC",
   "dependencies": {
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "d3-sankey": "^0.12.3",
+    "d3-scale-chromatic": "^3.1.0",
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.7.0",
     "next": "^15.5.14",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-is": "^19.2.4",
+    "react-simple-maps": "^3.0.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@types/d3-sankey": "^0.12.5",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

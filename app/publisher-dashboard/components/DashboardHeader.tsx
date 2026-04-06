@@ -1,71 +1,73 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Monitor, Bell, Settings, ChevronDown, Layers } from "lucide-react";
+import { Download, Monitor, Settings, ChevronDown, Layers } from "lucide-react";
 import { PORTFOLIO_TOTALS, PORTFOLIO_HEALTH, type HealthStatus } from "@/lib/mockPublisherData";
 import { clsx } from "clsx";
+import CommandPalette from "./CommandPalette";
+import { type ActionChip } from "@/lib/mockPublisherData";
 
-const HEALTH_CONFIG: Record<
-  HealthStatus,
-  { label: string; color: string; glowClass: string; pulse: string; bg: string }
-> = {
+const HEALTH_COLOR: Record<HealthStatus, string> = {
+  optimal: "#ABF790",
+  warning: "#FAFD7E",
+  critical: "#FF637F",
+};
+
+// Mesh gradient that shifts based on health — CSS animation
+const MESH_STYLE: Record<HealthStatus, React.CSSProperties> = {
   optimal: {
-    label: "Optimal",
-    color: "#ABF790",
-    glowClass: "shadow-glow-green",
-    pulse: "bg-status-success",
-    bg: "bg-[#ABF790]/10 border-[#ABF790]/30",
+    background: `
+      radial-gradient(ellipse at 20% 50%, rgba(171,247,144,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, rgba(54,224,248,0.12) 0%, transparent 55%),
+      rgba(171,247,144,0.06)
+    `,
+    border: "1px solid rgba(171,247,144,0.25)",
   },
   warning: {
-    label: "Warning",
-    color: "#FAFD7E",
-    glowClass: "shadow-glow-amber",
-    pulse: "bg-status-warning",
-    bg: "bg-[#FAFD7E]/10 border-[#FAFD7E]/30",
+    background: `
+      radial-gradient(ellipse at 20% 50%, rgba(250,253,126,0.15) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, rgba(241,145,250,0.10) 0%, transparent 55%),
+      rgba(250,253,126,0.05)
+    `,
+    border: "1px solid rgba(250,253,126,0.22)",
   },
   critical: {
-    label: "Critical",
-    color: "#FF637F",
-    glowClass: "shadow-glow-red",
-    pulse: "bg-status-error",
-    bg: "bg-[#FF637F]/10 border-[#FF637F]/30",
+    background: `
+      radial-gradient(ellipse at 20% 50%, rgba(255,99,127,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, rgba(250,253,126,0.08) 0%, transparent 55%),
+      rgba(255,99,127,0.06)
+    `,
+    border: "1px solid rgba(255,99,127,0.25)",
   },
 };
 
 interface DashboardHeaderProps {
   presentationMode: boolean;
   onTogglePresentation: () => void;
+  onNavigate: (id: string) => void;
+  onHighlightGame: (gameId: string) => void;
+  onChipClick: (chip: ActionChip) => void;
 }
 
 export default function DashboardHeader({
-  presentationMode,
-  onTogglePresentation,
+  presentationMode, onTogglePresentation, onNavigate, onHighlightGame,
 }: DashboardHeaderProps) {
-  const health = HEALTH_CONFIG[PORTFOLIO_HEALTH];
-  const [notifOpen, setNotifOpen] = useState(false);
-
-  const fmt = (n: number) =>
-    n >= 1_000_000
-      ? `$${(n / 1_000_000).toFixed(2)}M`
-      : `$${(n / 1_000).toFixed(0)}K`;
+  const health = PORTFOLIO_HEALTH;
+  const color = HEALTH_COLOR[health];
+  const fmt = (n: number) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : `$${(n / 1_000).toFixed(0)}K`;
 
   return (
-    <header className="flex flex-col gap-4 mb-6">
-      {/* Top bar */}
+    <header className="flex flex-col gap-3 mb-5">
       <div className="flex items-center justify-between gap-4">
-        {/* Brand + title */}
+        {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#F191FA]/20 to-[#36E0F8]/20 border border-white/10">
             <Layers className="w-5 h-5 text-[#36E0F8]" />
           </div>
           <div>
-            <h1
-              className="text-xl font-bold tracking-tight text-brand-1"
-              style={{ letterSpacing: "-0.02em" }}
-            >
+            <h1 className="text-[20px] font-bold text-brand-1" style={{ letterSpacing: "-0.02em" }}>
               {PORTFOLIO_TOTALS.publisherName}
             </h1>
-            <p className="text-[11px] text-brand-4 uppercase tracking-widest">
+            <p className="text-[10px] text-brand-4 uppercase tracking-widest">
               Publisher Command Center — {PORTFOLIO_TOTALS.reportPeriod}
             </p>
           </div>
@@ -73,21 +75,15 @@ export default function DashboardHeader({
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
-          {/* Notification bell */}
-          <button
-            onClick={() => setNotifOpen(!notifOpen)}
-            className="relative flex items-center justify-center w-9 h-9 rounded-lg glass-card border border-white/08 hover:border-[#36E0F8]/40 transition-colors"
-          >
-            <Bell className="w-4 h-4 text-brand-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#FF637F] rounded-full" />
-          </button>
-
-          {/* Settings */}
+          <CommandPalette
+            onNavigate={onNavigate}
+            onTogglePresentation={onTogglePresentation}
+            presentationMode={presentationMode}
+            onHighlightGame={onHighlightGame}
+          />
           <button className="flex items-center justify-center w-9 h-9 rounded-lg glass-card border border-white/08 hover:border-white/20 transition-colors">
             <Settings className="w-4 h-4 text-brand-4" />
           </button>
-
-          {/* Presentation mode */}
           <button
             onClick={onTogglePresentation}
             className={clsx(
@@ -98,105 +94,51 @@ export default function DashboardHeader({
             )}
           >
             <Monitor className="w-3.5 h-3.5" />
-            {presentationMode ? "Exit Deck Mode" : "Board Deck"}
+            {presentationMode ? "Exit Deck" : "Board Deck"}
           </button>
-
-          {/* Export button */}
           <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-semibold bg-gradient-to-r from-[#F191FA] to-[#83E3F0] text-[#0D0D0D] hover:opacity-90 transition-opacity">
             <Download className="w-3.5 h-3.5" />
-            Export
-            <ChevronDown className="w-3 h-3 opacity-70" />
+            Export <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
         </div>
       </div>
 
-      {/* KPI strip + Master Pulse */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Master Pulse */}
-        <div
-          className={clsx(
-            "flex items-center gap-2.5 px-4 py-2 rounded-xl border text-[13px] font-semibold",
-            health.bg
-          )}
-        >
-          {/* Aura glow dot */}
-          <div className="relative flex items-center justify-center">
-            <span
-              className={clsx(
-                "absolute w-4 h-4 rounded-full opacity-40 animate-pulse-glow",
-                health.pulse
-              )}
-            />
-            <span
-              className={clsx("w-2.5 h-2.5 rounded-full", health.pulse)}
-            />
-          </div>
-          <span style={{ color: health.color }}>
-            Portfolio: {health.label}
-          </span>
+      {/* Mesh gradient health bar */}
+      <div
+        className="flex items-center gap-3 rounded-xl px-4 py-2.5 transition-all duration-700"
+        style={{ ...MESH_STYLE[health], backdropFilter: "blur(12px)" }}
+      >
+        {/* Animated aura dot */}
+        <div className="relative flex-shrink-0">
+          <div className="absolute inset-0 rounded-full animate-pulse-glow"
+            style={{ background: color, opacity: 0.3, transform: "scale(2.2)" }} />
+          <div className="w-2.5 h-2.5 rounded-full relative" style={{ background: color }} />
         </div>
 
+        <span className="text-[12px] font-bold" style={{ color }}>Portfolio: {health.charAt(0).toUpperCase() + health.slice(1)}</span>
+
+        <div className="w-px h-4 bg-white/10" />
+
         {/* KPI pills */}
-        {[
-          {
-            label: "MTD Revenue",
-            value: fmt(PORTFOLIO_TOTALS.totalRevenueMTD),
-            delta: `+${PORTFOLIO_TOTALS.revenueDelta}%`,
-            positive: true,
-          },
-          {
-            label: "Total DAU",
-            value: (PORTFOLIO_TOTALS.totalDAU / 1000).toFixed(1) + "K",
-            delta: `+${PORTFOLIO_TOTALS.dauDelta}%`,
-            positive: true,
-          },
-          {
-            label: "MAU",
-            value: (PORTFOLIO_TOTALS.totalMAU / 1000).toFixed(0) + "K",
-            delta: null,
-            positive: true,
-          },
-          {
-            label: "Live CCU",
-            value: (PORTFOLIO_TOTALS.totalCCU / 1000).toFixed(1) + "K",
-            delta: null,
-            positive: true,
-          },
-          {
-            label: "Avg Refund",
-            value: PORTFOLIO_TOTALS.avgRefundRate + "%",
-            delta: null,
-            positive: false,
-          },
-          {
-            label: "Avg Rating",
-            value: PORTFOLIO_TOTALS.avgSteamRating + "/100",
-            delta: null,
-            positive: true,
-          },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg glass-card border border-white/08"
-          >
-            <span className="text-[10px] text-brand-4 uppercase tracking-wider">
-              {kpi.label}
-            </span>
-            <span className="mono-num text-[13px] font-bold text-brand-1">
-              {kpi.value}
-            </span>
-            {kpi.delta && (
-              <span
-                className={clsx(
-                  "mono-num text-[10px] font-semibold",
-                  kpi.positive ? "text-status-success" : "text-status-error"
-                )}
-              >
-                {kpi.delta}
-              </span>
-            )}
-          </div>
-        ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { label: "Revenue", value: fmt(PORTFOLIO_TOTALS.totalRevenueMTD), delta: `+${PORTFOLIO_TOTALS.revenueDelta}%`, ok: true },
+            { label: "DAU", value: `${(PORTFOLIO_TOTALS.totalDAU / 1000).toFixed(1)}K`, delta: `+${PORTFOLIO_TOTALS.dauDelta}%`, ok: true },
+            { label: "MAU", value: `${(PORTFOLIO_TOTALS.totalMAU / 1000).toFixed(0)}K`, delta: null, ok: true },
+            { label: "CCU", value: `${(PORTFOLIO_TOTALS.totalCCU / 1000).toFixed(1)}K`, delta: null, ok: true },
+            { label: "Avg Refund", value: `${PORTFOLIO_TOTALS.avgRefundRate}%`, delta: null, ok: false },
+          ].map((kpi) => (
+            <div key={kpi.label} className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/04 border border-white/07">
+              <span className="text-[9px] text-brand-4 uppercase tracking-wider">{kpi.label}</span>
+              <span className="mono-num text-[12px] font-bold text-brand-1">{kpi.value}</span>
+              {kpi.delta && (
+                <span className={`mono-num text-[9px] font-bold ${kpi.ok ? "text-status-success" : "text-status-error"}`}>
+                  {kpi.delta}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </header>
   );

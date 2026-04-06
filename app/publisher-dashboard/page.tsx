@@ -1,61 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
+import { type ActionChip } from "@/lib/mockPublisherData";
 
 import AIInsightsBar from "./components/AIInsightsBar";
 import DashboardHeader from "./components/DashboardHeader";
+import ExecutiveSummary from "./components/ExecutiveSummary";
 import PortfolioMap from "./components/PortfolioMap";
 import LiveTicker from "./components/LiveTicker";
 import GamePerformanceGrid from "./components/GamePerformanceGrid";
 import IndustryBenchmark from "./components/IndustryBenchmark";
 import OmniChannelPipeline from "./components/OmniChannelPipeline";
 import RegionalRevenueMap from "./components/RegionalRevenueMap";
+import LocalizationSentinel from "./components/LocalizationSentinel";
 
-// ─── Stagger animation variants ───────────────────────────────────────────────
+// ─── Scroll-reveal section wrapper ───────────────────────────────────────────
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut" as const,
-    },
-  },
-};
-
-const headerVariants = {
-  hidden: { opacity: 0, y: -16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: "easeOut" as const },
-  },
-};
-
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-
-function Section({
+function RevealSection({
   children,
   className,
+  id,
+  delay = 0,
 }: {
   children: React.ReactNode;
   className?: string;
+  id?: string;
+  delay?: number;
 }) {
   return (
-    <motion.div variants={itemVariants} className={className}>
+    <motion.div
+      id={id}
+      className={className}
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.55, ease: "easeOut", delay }}
+    >
       {children}
     </motion.div>
   );
@@ -65,6 +47,38 @@ function Section({
 
 export default function PublisherDashboard() {
   const [presentationMode, setPresentationMode] = useState(false);
+  const [highlightedGameId, setHighlightedGameId] = useState<string | null>(null);
+  const [sentinelOpen, setSentinelOpen] = useState(false);
+
+  // Highlight a game card: scroll to it, pulse it for 2.5 s
+  const handleChipClick = useCallback((chip: ActionChip) => {
+    // Scroll to the games section
+    const gamesSection = document.getElementById("section-games");
+    if (gamesSection) {
+      gamesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // After scroll settles, highlight the specific card
+    setHighlightedGameId(chip.gameId);
+    setTimeout(() => setHighlightedGameId(null), 2500);
+  }, []);
+
+  const handleHighlightGame = useCallback((gameId: string) => {
+    const card = document.getElementById(`game-card-${gameId}`);
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setHighlightedGameId(gameId);
+    setTimeout(() => setHighlightedGameId(null), 2500);
+  }, []);
+
+  const handleNavigate = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleSentinelOpen = useCallback((gameId: string) => {
+    setSentinelOpen(true);
+  }, []);
 
   return (
     <div
@@ -73,7 +87,7 @@ export default function PublisherDashboard() {
         presentationMode && "presentation-mode"
       )}
     >
-      {/* Background texture */}
+      {/* Background ambient gradients */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -85,7 +99,7 @@ export default function PublisherDashboard() {
         }}
       />
 
-      {/* Grid dot pattern */}
+      {/* Dot grid texture */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.025]"
         style={{
@@ -95,96 +109,113 @@ export default function PublisherDashboard() {
       />
 
       <div className="relative z-10 max-w-[1600px] mx-auto">
-        {/* ── AI Insights Bar ── */}
+
+        {/* ── AI Insights Bar (above fold, always visible) ── */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={headerVariants}
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          <AIInsightsBar />
+          <AIInsightsBar onChipClick={handleChipClick} />
         </motion.div>
 
-        {/* ── Header ── */}
+        {/* ── Dashboard Header ── */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={headerVariants}
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
         >
           <DashboardHeader
             presentationMode={presentationMode}
             onTogglePresentation={() => setPresentationMode((p) => !p)}
+            onNavigate={handleNavigate}
+            onHighlightGame={handleHighlightGame}
+            onChipClick={handleChipClick}
           />
         </motion.div>
 
-        {/* ── Main bento grid ── */}
+        {/* ── Executive Summary (above fold, instant reveal) ── */}
         <motion.div
-          className="space-y-4"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.12 }}
         >
-          {/* ── Row 1: Portfolio Map (8col) + Live Ticker (4col) ── */}
-          <Section>
-            <div className="grid grid-cols-12 gap-4">
-              {/* Portfolio Map: 8 cols */}
-              <div className="col-span-8">
-                <PortfolioMap presentationMode={presentationMode} />
-              </div>
-
-              {/* Live Ticker: 4 cols */}
-              <div className="col-span-4" style={{ minHeight: 420 }}>
-                <LiveTicker presentationMode={presentationMode} />
-              </div>
-            </div>
-          </Section>
-
-          {/* ── Row 2: Game Performance Grid (full width) ── */}
-          <Section>
-            <GamePerformanceGrid presentationMode={presentationMode} />
-          </Section>
-
-          {/* ── Row 3: Industry Benchmark (7col) + Omni-Channel (5col) ── */}
-          <Section>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-7">
-                <IndustryBenchmark presentationMode={presentationMode} />
-              </div>
-              <div className="col-span-5">
-                <OmniChannelPipeline presentationMode={presentationMode} />
-              </div>
-            </div>
-          </Section>
-
-          {/* ── Row 4: Regional Revenue Map (full width) ── */}
-          <Section>
-            <RegionalRevenueMap presentationMode={presentationMode} />
-          </Section>
-
-          {/* ── Footer ── */}
-          <Section>
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl glass-card border border-white/05">
-              <div className="flex items-center gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-status-success pulse-dot" />
-                <span className="text-[10px] text-brand-4">
-                  All systems operational · Data refreshed 30s ago
-                </span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] text-brand-4">
-                  Nexus Interactive Publisher Command Center
-                </span>
-                <span className="text-[10px] text-brand-4/50">v2.4.0</span>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded bg-white/04 border border-white/08"
-                  style={{ color: "#36E0F8" }}
-                >
-                  BIOME Design System
-                </span>
-              </div>
-            </div>
-          </Section>
+          <ExecutiveSummary />
         </motion.div>
+
+        {/* ── Live Ticker (above fold) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.18 }}
+          className="mb-4"
+          id="section-ticker"
+        >
+          <LiveTicker presentationMode={presentationMode} />
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════════════
+            Scroll-revealed sections below the fold
+        ═══════════════════════════════════════════════════ */}
+
+        {/* ── Audience Flow + Whale Heatmap ── */}
+        <RevealSection id="section-audience" className="mb-4">
+          <PortfolioMap presentationMode={presentationMode} />
+        </RevealSection>
+
+        {/* ── Game Performance Grid ── */}
+        <RevealSection id="section-games" className="mb-4" delay={0.04}>
+          <GamePerformanceGrid
+            presentationMode={presentationMode}
+            highlightedGameId={highlightedGameId}
+            onSentinelOpen={handleSentinelOpen}
+          />
+        </RevealSection>
+
+        {/* ── Industry Benchmark + Omni-Channel Pipeline ── */}
+        <RevealSection id="section-benchmarks" className="mb-4" delay={0.04}>
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-7">
+              <IndustryBenchmark presentationMode={presentationMode} />
+            </div>
+            <div className="col-span-5" id="section-automation">
+              <OmniChannelPipeline presentationMode={presentationMode} />
+            </div>
+          </div>
+        </RevealSection>
+
+        {/* ── Global Revenue Heatmap ── */}
+        <RevealSection className="mb-4" delay={0.04}>
+          <RegionalRevenueMap presentationMode={presentationMode} />
+        </RevealSection>
+
+        {/* ── Footer ── */}
+        <RevealSection>
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl glass-card border border-white/05">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-status-success pulse-dot" />
+              <span className="text-[10px] text-brand-4">
+                All systems operational · Data refreshed 30s ago
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] text-brand-4">
+                Nexus Interactive Publisher Command Center
+              </span>
+              <span className="text-[10px] text-brand-4/50">v2.4.0</span>
+              <span
+                className="text-[10px] px-2 py-0.5 rounded bg-white/04 border border-white/08"
+                style={{ color: "#36E0F8" }}
+              >
+                BIOME Design System
+              </span>
+            </div>
+          </div>
+        </RevealSection>
       </div>
+
+      {/* ── Localization Sentinel slide-over ── */}
+      <LocalizationSentinel open={sentinelOpen} onClose={() => setSentinelOpen(false)} />
     </div>
   );
 }
